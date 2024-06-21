@@ -1,0 +1,21 @@
+package com.fileDoc.fileDocEntity;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@AllArgsConstructor(staticName = "userEntity")
+@NoArgsConstructor
+@Data
+public class userEntity{
+	@Id
+	private Long enrolment;
+	private String userName ;
+	private String pass;
+	private String course;
+	private String fileName;
+	
+}

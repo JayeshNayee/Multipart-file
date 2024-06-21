@@ -1,0 +1,174 @@
+package com.file.implementation;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.file.Entity.fileEntity;
+import com.file.Entity.parentFileEntity;
+import com.file.RepoInterface.parentFileInterface;
+import com.file.RepoInterface.repoInterFace;
+import com.file.ServiceInterface.serviceInterface;
+
+import jakarta.annotation.Resource;
+
+@Component
+public class serviceImplementaiton implements serviceInterface{
+	
+	@Autowired
+	private repoInterFace repoInter;
+	
+	@Autowired
+	private parentFileInterface parentInter;
+
+	@Override
+	public String uploadSingleFile(MultipartFile multipartFile) {
+
+		try {
+			String path  = null;
+			path = new ClassPathResource("").getFile().getAbsolutePath();
+			File file  = new File(path, "image");
+			if(!file.exists()) {
+				System.out.println("makdir path "+ path );
+				file.mkdir();
+			}
+			System.out.println("path "+path);
+			
+			String filename = multipartFile.getOriginalFilename(); //jayesh.png
+			
+			System.out.println("filename "+ filename);
+			String uniqueName = UUID.randomUUID().toString();  // abbdjb313124
+			
+			System.out.println("Random id"+ uniqueName);
+			
+			String newFileName = uniqueName.concat(filename.substring(filename.lastIndexOf('.')));  //abbdjb313124.png
+			System.out.println("final file name "+ newFileName);
+			
+			fileEntity refileEntity = fileEntity.reMultipartFile(0l, filename, newFileName, uniqueName, multipartFile.getContentType(), multipartFile.getSize());
+			
+			System.out.println("fileEntity "+ refileEntity);
+			repoInter.save(refileEntity);
+			
+			// Store the path 
+		String fullPath = path + File.separator + newFileName;
+		
+		Files.copy(multipartFile.getInputStream(),Path.of(fullPath), StandardCopyOption.REPLACE_EXISTING);
+	
+		} 
+	
+
+	@Override
+	public String uploadMultipleFile(MultipartFile[] multipartFile) {
+		
+		
+		// create child table arrayList
+		List<fileEntity>childList = new ArrayList<>();
+		
+		
+		for (MultipartFile file : multipartFile) 
+		{
+			try {
+				String path = null;
+				path = new ClassPathResource("").getFile().getAbsolutePath();
+
+				File f = new File(path, "Image");
+				
+				String fileName = file.getOriginalFilename();
+				
+				String uniquename = UUID.randomUUID().toString();
+				
+				System.out.println("uniquename "+ uniquename);
+				
+				String newFileName = uniquename.concat(fileName.substring(fileName.lastIndexOf('.')));
+				
+				System.out.println("newFilename "+ newFileName);
+				
+				fileEntity reMultipartFile = fileEntity.reMultipartFile(0l, fileName, newFileName, uniquename, file.getContentType(), file.getSize());
+				
+				childList.add(reMultipartFile);
+				System.out.println("List "+ childList);
+			}
+			catch (Exception e)
+			{
+				return "error";
+			}
+		}
+		parentFileEntity parentEntity = parentFileEntity.parentFileEntity(0l, "Image", childList);
+		parentInter.save(parentEntity);
+		
+		return "All Files will be saved";
+	}
+
+	@Override
+	public org.springframework.core.io.Resource downloadSingleFile() {
+		System.out.println("service Implementation");
+		ClassPathResource classPathResource = new ClassPathResource("image/33afc74a-dc52-45d5-beb7-ef5a4dcb584f.png");
+		return classPathResource;
+	}
+
+	@Override
+	public org.springframework.core.io.Resource downloadZipFile() {
+		ClassPathResource classPathResource = new ClassPathResource("AllData.xlsx");
+		return classPathResource;
+	}
+
+	@Override
+	public String uploadMultipleFileUsingZip(MultipartFile[] multipartFiles) {
+		
+		try {
+			String path = null;
+			System.out.println("11");
+			 path = new ClassPathResource("").getFile().getAbsolutePath();
+			 
+			 File file = new File(path, "zipData");
+			 if(!file.exists())
+			 {
+				 file.mkdir();
+			 }
+			 
+			 String zipfile = "download.zip";
+			 String fullPath = file.getAbsolutePath() + File.separator +zipfile;
+			 
+			 System.out.println("absolutepath "+ file.getAbsolutePath());
+			 
+			 System.out.println("fullpath "+ fullPath);
+
+			 try (ZipOutputStream zStream = new ZipOutputStream(new FileOutputStream(fullPath)))
+			 {
+				 for (MultipartFile mFile : multipartFiles) 
+				 {
+					String filename = mFile.getOriginalFilename();
+					String uniqueName = UUID.randomUUID().toString();
+					String newFileName = uniqueName.concat(filename.substring(filename.lastIndexOf('.')));
+					 fileEntity reMultipartFile = fileEntity.reMultipartFile(1l, filename, newFileName, uniqueName, mFile.getContentType(), mFile.getSize());
+					 System.out.println("save");
+					 repoInter.save(reMultipartFile);
+					
+					ZipEntry zipEntry = new ZipEntry(mFile.getOriginalFilename());
+					zStream.putNextEntry(zipEntry);
+					zStream.write(mFile.getBytes());
+					zipEntry.clone();
+				}
+				
+			} 
+			 return "save data "+fullPath;
+		} catch (Exception e)
+		{
+
+		}
+		return null;
+	}
+
+}
